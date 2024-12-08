@@ -24,9 +24,9 @@ methods_list = df["Method"].unique()
 # Define a static parameters DataFrame as before
 static_params = pd.DataFrame({
     "Method": ["GD", "NAG", "PAG", "ADAM", "ADAGrad"],
-    "LR": [0.9,0.9,0.9,0.9,0.9],
-    "Momentum [1]":["-",0.9,0.9,0.9,"-"],
-    "Momentum [2]":["-","-","-",0.9,"-"]
+    "LR": [5e-5,1e-5,1e-5,0.7,1.41],
+    "Momentum [1]":["-",0.8,0.8,0.7,"-"],
+    "Momentum [2]":["-","-","-",0.999,"-"]
     
 })
 
@@ -49,8 +49,8 @@ app_ui = ui.page_fluid(
                 selected=list(methods_list)  # Initially select all methods
             ),
             ui.tags.strong("Plot Axis Control:"),
-            ui.input_slider("xmin", "X Axis Min (Iterations)", min=0, max=250, value=0),
-            ui.input_slider("xmax", "X Axis Max (Iterations)", min=0, max=250, value=250),
+            ui.input_slider("xmin", "X Axis Min (Iterations)", min=0, max=100, value=0),
+            ui.input_slider("xmax", "X Axis Max (Iterations)", min=0, max=100, value=100),
             ui.input_slider("ymin", "Y Axis Min (Accuracy)", min=0, max=1.1, value=0.3),
             ui.input_slider("ymax", "Y Axis Max (Accuracy)", min=0, max=1.1, value=1),
 
