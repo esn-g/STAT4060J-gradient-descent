@@ -9,23 +9,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import ast
 
-# Read the CSV with the final structure provided
-df = pd.read_csv("logistic_regression_results.csv")
 
-# Parse the 'Accuracies' column from a string to a list of floats
+df = pd.read_csv("logistic_regression_results2.csv")
+
+# csv turn string to float
 def parse_accuracies(acc_str):
     return ast.literal_eval(acc_str)
 
 df["Accuracies"] = df["Accuracies"].apply(parse_accuracies)
 
-# Extract the list of unique methods from the DataFrame
 methods_list = df["Method"].unique()
 
-# Define a static parameters DataFrame as before
 static_params = pd.DataFrame({
     "Method": ["GD", "NAG", "PAG", "ADAM", "ADAGrad"],
-    "LR": [5e-5,1e-5,1e-5,0.7,1.41],
-    "Momentum [1]":["-",0.8,0.8,0.7,"-"],
+    "LR": [8e-5,8e-5,1e-5,0.58,1.34],
+    "Momentum [1]":["-",0.85,0.8,0.6,"-"],
     "Momentum [2]":["-","-","-",0.999,"-"]
     
 })
@@ -34,25 +32,24 @@ app_ui = ui.page_fluid(
     ui.h1("A Study of Accelerated Gradient Descent for Classification with Logistic Regression"),
     ui.div(
         ui.strong("README!!!"),
-        ui.p("This page describes the results of the project work of group 5 in the FA2024 round of STAT4060J at UM-SJTU Joint Institute. A logistic classification problem was investigated, with different optimization methods based on standard gradient descent. The goal was to get an insight into how gradient descent can accelerated, to solve for accurate classifiers in minimum time. Below is displayed an interactive plot with a selectd nominal sample of our runs. Different regions can be analyzed via the Axis min/max sliders, and convergence trajectories can be removed and selected using the checkboxes. The dataset 'breastcancer', with 24 features after cleaning, from SCIkit Learn was used, and the logistic regression classifier is trained to predict is a person has breast cancer based on these paramters. All methods were designed and implemented in python."),
+        ui.p("This page describes the results of the project work of group 5 in the FA2024 round of STAT4060J at UM-SJTU Joint Institute. A logistic classification problem was investigated, with different optimization methods based on standard gradient descent. The goal was to get an insight into how gradient descent can accelerated, to solve for accurate classifiers in minimum time. Below is displayed an interactive plot with a run when the hyper parameters were fine-tuned. Different regions can be analyzed via the Axis min/max sliders, and convergence trajectories can be removed and selected using the checkboxes. The dataset 'airline passenger satisfaction', with 24 features after cleaning, available at Kaggle was used, and the logistic regression classifier is trained to predict is satisfied or dissatisfied based on these paramters. All methods were designed and implemented in python."),
         class_="alert alert-info"
     ),
     ui.row(
         ui.column(
             3,
             ui.h3("Plot Control"),
-            # Add back the checkbox group for methods
             ui.input_checkbox_group(
                 "selected_methods", 
                 ui.tags.strong("Select Methods to Display:"),
                 {method: method for method in methods_list}, 
-                selected=list(methods_list)  # Initially select all methods
+                selected=list(methods_list)
             ),
             ui.tags.strong("Plot Axis Control:"),
-            ui.input_slider("xmin", "X Axis Min (Iterations)", min=0, max=100, value=0),
-            ui.input_slider("xmax", "X Axis Max (Iterations)", min=0, max=100, value=100),
-            ui.input_slider("ymin", "Y Axis Min (Accuracy)", min=0, max=1.1, value=0.3),
-            ui.input_slider("ymax", "Y Axis Max (Accuracy)", min=0, max=1.1, value=1),
+            ui.input_slider("xmin", "Min (Iterations)", min=0, max=100, value=0),
+            ui.input_slider("xmax", "Max (Iterations)", min=0, max=100, value=100),
+            ui.input_slider("ymin", "Min (Accuracy)", min=0, max=1.1, value=0.5),
+            ui.input_slider("ymax", " Max (Accuracy)", min=0, max=1.1, value=0.9),
 
 
         ),
@@ -62,7 +59,7 @@ app_ui = ui.page_fluid(
             ui.output_plot("combined_plot"),
             ui.h3("Discussion"),
             ui.div(
-        "This is some text inside a div."),
+        "The results are clear, that there is no real difference for this problem when using accelerated gradient methods. This can largely be attributed to the fact that the problem is convex. Therefore, with fine tuning, there is no difference. Our initial experiments showed that accelerated gradient methods outperformed basic gradient descent with 'standard' hyper parameters."),
         ),
         ui.column(
             4,
@@ -95,32 +92,24 @@ def server(input, output, session):
     @output
     @render.plot
     def combined_plot():
-        # Determine axis limits
         if valid_ranges():
             x_min, x_max = input.xmin(), input.xmax()
             y_min, y_max = input.ymin(), input.ymax()
         else:
-            # Default values if invalid
-            x_min, x_max = 0, 250
-            y_min, y_max = 0.3, 1
+            x_min, x_max = 0, 100
+            y_min, y_max = 0.3, 0.9
 
         plt.figure(figsize=(10, 6))
 
-        # Get the list of methods the user selected
         selected = input.selected_methods()
 
-        # Filter df to include only the selected methods
         df_filtered = df[df["Method"].isin(selected)]
 
-        # Plot each selected method's accuracies as a line
         for idx, row in df_filtered.iterrows():
             accuracies = row["Accuracies"]
             actual_iterations = row["Actual Iterations"]
 
-            # Safely clamp x_max if it exceeds actual_iterations
             x_max_clamped = min(x_max, actual_iterations)
-
-            # Slice the accuracies for the selected iteration range
             x_values = range(x_min, x_max_clamped)
             y_values = accuracies[x_min:x_max_clamped]
 
@@ -145,21 +134,18 @@ def server(input, output, session):
             "Time/Iteration (ms)"
         ]].copy()
 
-        # Rename column headers
         df_results = df_results.rename(columns={
             "Convergence Iteration": "Conv. Iter.",
             "Convergence Time (s)": "Time (s)",
             "Time/Iteration (ms)": "ms/Iter"
         })
 
-        # Replace method names
         df_results["Method"] = df_results["Method"].replace({
             "Nestorov Accelerated Gradient": "NAG",
             "Basic Gradient Descent": "GD",
             "Polyak Accelerated Gradient": "PAG"
         })
 
-        # Round numbers as desired
         df_results["Time (s)"] = df_results["Time (s)"].round(3)
         df_results["ms/Iter"] = df_results["ms/Iter"].round(2)
         df_results["Conv. Iter."] = df_results["Conv. Iter."].astype(int)
